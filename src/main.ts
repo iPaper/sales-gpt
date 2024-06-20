@@ -1,6 +1,6 @@
-import fs from "fs";
-import path from "path";
-import dotenv from "dotenv";
+import { readFileSync, writeFileSync } from "fs";
+import { dirname, join } from "path";
+import { config } from "dotenv";
 import OpenAI from "openai";
 import multer from "multer";
 import stream from "stream";
@@ -12,27 +12,27 @@ import { createJsonTranslator, createOpenAILanguageModel } from "typechat";
 import { createTypeScriptJsonValidator } from "typechat/ts";
 import { fileURLToPath } from "url";
 
-import TargetSchema from "./TargetSchema.ts";
-import CsvDataItem from "./interfaces.ts";
+import TargetSchema from "./TargetSchema";
+import CsvDataItem from "./Interfaces";
 
-dotenv.config();
+config();
 
 // Load default instructions
 const defaultInstructionsObj = JSON.parse(
-  fs.readFileSync("json/defaultInstructions.json").toString()
+  readFileSync("json/defaultInstructions.json").toString()
 );
 
 // Load user instructions
 let userInstructionsObj = JSON.parse(
-  fs.readFileSync("json/userInstructionsSave.json").toString()
+  readFileSync("json/userInstructionsSave.json").toString()
 );
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
-const __dirname = path.dirname(__filename); // get the name of the directory
-const { headersToAdd, defaultInstructions } = defaultInstructionsObj;
+const __dirname = dirname(__filename); // get the name of the directory
 
-let { userInstructions } = userInstructionsObj;
+let { userInstructions, defaultInstructions, headersToAdd } =
+  userInstructionsObj;
 
 const PORT = process.env.PORT || 3000;
 const allowedOrigins = [
@@ -98,20 +98,31 @@ function checkFileType(
   }
 }
 
-// Load up the contents of our "Response" schema.
+const targetTypeString = `
+export type Target = {
+  online: "Yes" | "No";
+  url: string;
+  id: string;
+  type: "B2B" | "B2C" | "Both B2B and B2C" | "Agency";
+  model:
+    | "Retail"
+    | "E-commerce"
+    | "Both e-commerce and physical stores"
+    | "Physical stores";
+  catalogs: "Yes" | "No" | "Maybe";
+  catalogLinks: string[] | "N/A";
+};
+`;
 
 // Set up OpenAI
-const key = process.env.OPENAI_API_KEY as string;
-const model = createOpenAILanguageModel(key, "gpt-4o");
-
-const targetSchema = fs.readFileSync(
-  path.join(__dirname, "TargetSchema.ts"),
-  "utf8"
-);
+// Load up the contents of "Response" schema.
 const validator = createTypeScriptJsonValidator<TargetSchema>(
-  targetSchema,
+  targetTypeString,
   "Target"
 );
+
+const key = process.env.OPENAI_API_KEY as string;
+const model = createOpenAILanguageModel(key, "gpt-4o");
 const translator = createJsonTranslator(model, validator);
 
 const openai = new OpenAI({
@@ -121,23 +132,23 @@ const openai = new OpenAI({
 const getInstructions = () => {
   const instructions = `
 
-I need you to be very very sure(100%) with the answers without any speculation.
+  I need you to be very very sure(100%) with the answers without any speculation.
 
-${userInstructions.translate}.
+  ${userInstructions.translation}.
 
-The asnwers have to be extensively long and detailed where and what was found.
+  The asnwers have to be extensively long and detailed where and what was found.
 
-0. If the website is restricted with robots.txt skip the checks.
+  1. Include the id and url provided in the answer and display it only here once.
 
-1. Include the id and url provided in the answer and display it only here once.
+  2. Please check if the website provided is online. If No skip the checks.
 
-2. Please check if the website provided is online. If No skip the checks.
+  3. ${userInstructions.catalogs}
 
-3. ${userInstructions.catalog}.
+  4. ${userInstructions.type}
 
-4. ${userInstructions.type}.
+  5. ${userInstructions.model}
 
-5. ${userInstructions.model}.
+  6. ${userInstructions.catalogLinks}
 
 `;
   return instructions;
@@ -153,7 +164,7 @@ const runGPT = async (website?: string, recordId?: string) => {
       },
       {
         role: "user",
-        content: `Website URL: ${website} Record ID: ${recordId}`,
+        content: `url: ${website} id: ${recordId}`,
       },
     ],
     temperature: 0.2, // Higher values means the model will take more risks.
@@ -161,13 +172,14 @@ const runGPT = async (website?: string, recordId?: string) => {
     model: "gpt-4o-2024-05-13",
   });
 
-  const initialResult = chatCompletion?.choices?.[0].message.content as any;
+  const initialResult =
+    chatCompletion?.choices?.[0]?.message?.content ?? ("No text" as any);
+
   const removedBreaksText = initialResult.replace(/(\r\n|\n|\r)/gm, "");
 
-  const finalAnswer = ((await translator.translate(removedBreaksText)) as any)
-    .data;
+  const finalAnswer = (await translator.translate(removedBreaksText)) as any;
 
-  return finalAnswer;
+  return finalAnswer.data;
 };
 
 const getDataFromUploadedFile = (buffer: Buffer) => {
@@ -187,9 +199,7 @@ const getDataFromUploadedFile = (buffer: Buffer) => {
 
 const getLeadDataFromGPT = async (csvData: CsvDataItem[]) => {
   const gptPromises = csvData.map((item: CsvDataItem) => {
-    const url = item["Website URL"];
-    const recordId = item["Record ID"];
-    return runGPT(url, recordId);
+    return runGPT(item.url, item.id);
   });
 
   const results = await Promise.all(gptPromises);
@@ -216,7 +226,7 @@ const createCSV = (data: CsvDataItem[]) => {
   return csv;
 
   // Write the CSV string to a file locally
-  // fs.writeFileSync(`test copy ${randomFileName}.csv`, csv);
+  // writeFileSync(`test copy ${randomFileName}.csv`, csv);
 };
 
 const combineTwoDataArrays = (
@@ -225,11 +235,11 @@ const combineTwoDataArrays = (
 ) => {
   const combinedArray = [] as CsvDataItem[];
 
-  csvArray.map((csvArrayItem: CsvDataItem) => {
+  csvArray.forEach((csvArrayItem: CsvDataItem) => {
     const tempObj = csvArrayItem;
 
-    gptArray.map((leadItem: CsvDataItem) => {
-      if (leadItem["Record ID"] == csvArrayItem["Record ID"]) {
+    gptArray.forEach((leadItem: CsvDataItem) => {
+      if (leadItem?.id == csvArrayItem?.id && leadItem) {
         headersToAdd.forEach((columnName: string) => {
           if (!tempObj[columnName]) {
             tempObj[columnName] = leadItem[columnName];
@@ -253,10 +263,10 @@ const updateUserInstructions = (req: any) => {
     let placeholder = new RegExp(`\\$\\{${key}\\}`, "g");
     textToModify = textToModify.replace(placeholder, newUserInstructions[key]);
   }
-  fs.writeFileSync("json/userInstructionsSave.json", textToModify);
+  writeFileSync("json/userInstructionsSave.json", textToModify);
 
   userInstructionsObj = JSON.parse(
-    fs.readFileSync("json/userInstructionsSave.json").toString()
+    readFileSync("json/userInstructionsSave.json").toString()
   );
 
   userInstructions = userInstructionsObj.userInstructions;
@@ -264,7 +274,7 @@ const updateUserInstructions = (req: any) => {
 
 //GET REQUESTS ---------------------------
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  res.send("Hello");
   res.status(200);
 });
 
@@ -293,33 +303,38 @@ app.post("/upload", async (req, res) => {
         const dataFromUploadedFile = (await getDataFromUploadedFile(
           req.file.buffer
         )) as CsvDataItem[];
+        const chatGPTArray: CsvDataItem[] = await getLeadDataFromGPT(
+          dataFromUploadedFile
+        );
 
-        console.log(dataFromUploadedFile, "data from file");
-        // const chatGPTArray: CsvDataItem[] = await getLeadDataFromGPT(
-        //   dataFromUploadedFile
-        // );
+        const combinedArray = combineTwoDataArrays(
+          dataFromUploadedFile,
+          chatGPTArray
+        );
 
-        // const combinedArray = combineTwoDataArrays(
-        //   dataFromUploadedFile,
-        //   chatGPTArray
-        // );
+        const csvToExport = createCSV(combinedArray);
 
-        // const csvToExport = createCSV(combinedArray);
+        const randomFileName: string = crypto.randomUUID();
 
-        // const randomFileName: string = crypto.randomUUID();
-
-        // res.setHeader(
-        //   "Content-Disposition",
-        //   `attachment; filename="${randomFileName}"`
-        // );
-        // res.setHeader("Content-Type", "text/csv");
-        // res.status(200).send(csvToExport);
-        res.status(200).send("aa");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${randomFileName}"`
+        );
+        res.setHeader("Content-Type", "text/csv");
+        res.status(200).send(csvToExport);
       }
     });
   } catch (err) {
     res.status(500).send(err);
   }
+});
+
+app.post("/check", async (req, res) => {
+  const url = req.body.url;
+
+  const answer = await runGPT(url, "00001");
+
+  res.status(200).send({ answer });
 });
 
 app.listen(PORT, () => {
