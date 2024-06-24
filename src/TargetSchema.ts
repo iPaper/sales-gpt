@@ -8,7 +8,7 @@ export type Target = {
     | "E-commerce"
     | "Both e-commerce and physical stores"
     | "Physical stores";
-  catalogs: "Yes" | "No" | "Maybe";
+  monthlyOrMoreCatalogs: "Yes" | "No" | "Maybe" | "Not sure";
   catalogLinks: string[] | "N/A";
 };
 

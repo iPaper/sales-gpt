@@ -1,5 +1,4 @@
 import { readFileSync, writeFileSync } from "fs";
-import { dirname, join } from "path";
 import { config } from "dotenv";
 import OpenAI from "openai";
 import multer from "multer";
@@ -10,10 +9,11 @@ import cors, { CorsOptions } from "cors";
 
 import { createJsonTranslator, createOpenAILanguageModel } from "typechat";
 import { createTypeScriptJsonValidator } from "typechat/ts";
-import { fileURLToPath } from "url";
 
 import TargetSchema from "./TargetSchema";
 import CsvDataItem from "./Interfaces";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
 
 config();
 
@@ -28,8 +28,6 @@ let userInstructionsObj = JSON.parse(
 );
 
 const app = express();
-const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
-const __dirname = dirname(__filename); // get the name of the directory
 
 let { userInstructions, defaultInstructions, headersToAdd } =
   userInstructionsObj;
@@ -98,28 +96,28 @@ function checkFileType(
   }
 }
 
-const targetTypeString = `
-export type Target = {
-  online: "Yes" | "No";
-  url: string;
-  id: string;
-  type: "B2B" | "B2C" | "Both B2B and B2C" | "Agency";
-  model:
-    | "Retail"
-    | "E-commerce"
-    | "Both e-commerce and physical stores"
-    | "Physical stores";
-  catalogs: "Yes" | "No" | "Maybe";
-  catalogLinks: string[] | "N/A";
-};
-`;
+// const targetTypeString = `
+// export type Target = {
+//   online: "Yes" | "No";
+//   url: string;
+//   id: string;
+//   type: "B2B" | "B2C" | "Both B2B and B2C" | "Agency";
+//   model:
+//     | "Retail"
+//     | "E-commerce"
+//     | "Both e-commerce and physical stores"
+//     | "Physical stores";
+//   catalogs: "Yes" | "No" | "Maybe";
+//   catalogLinks: string[] | "N/A";
+// };
+// `;
 
 // Set up OpenAI
 // Load up the contents of "Response" schema.
-const validator = createTypeScriptJsonValidator<TargetSchema>(
-  targetTypeString,
-  "Target"
-);
+const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
+const __dirname = dirname(__filename);
+const schema = readFileSync(path.join(__dirname, "TargetSchema.ts"), "utf8");
+const validator = createTypeScriptJsonValidator<TargetSchema>(schema, "Target");
 
 const key = process.env.OPENAI_API_KEY as string;
 const model = createOpenAILanguageModel(key, "gpt-4o");
@@ -131,26 +129,21 @@ const openai = new OpenAI({
 
 const getInstructions = () => {
   const instructions = `
-
-  I need you to be very very sure(100%) with the answers without any speculation.
-
-  ${userInstructions.translation}.
-
-  The asnwers have to be extensively long and detailed where and what was found.
+  Answer should be as broad and as big as possible with no speculation and really extensively long and detailed with exclusive analysis on each point where and what was found.
 
   1. Include the id and url provided in the answer and display it only here once.
 
   2. Please check if the website provided is online. If No skip the checks.
 
-  3. ${userInstructions.catalogs}
+  3. ${userInstructions.monthlyOrMoreCatalogs}
 
   4. ${userInstructions.type}
 
   5. ${userInstructions.model}
 
-  6. ${userInstructions.catalogLinks}
 
 `;
+
   return instructions;
 };
 
@@ -167,20 +160,25 @@ const runGPT = async (website?: string, recordId?: string) => {
         content: `url: ${website} id: ${recordId}`,
       },
     ],
-    temperature: 0.2, // Higher values means the model will take more risks.
-    max_tokens: 1024, // The maximum number of tokens to generate in the completion.
-    model: "gpt-4o-2024-05-13",
+    temperature: 1, // Higher values means the model will take more risks.
+    max_tokens: 1000, // The maximum number of tokens to generate in the completion.
+    model: "gpt-4o",
   });
 
   const initialResult =
     chatCompletion?.choices?.[0]?.message?.content ?? ("No text" as any);
 
+  console.log(initialResult);
   const removedBreaksText = initialResult.replace(/(\r\n|\n|\r)/gm, "");
 
   const finalAnswer = (await translator.translate(removedBreaksText)) as any;
-
   return finalAnswer.data;
 };
+
+// setInterval(async () => {
+//   await runGPT("https://www.ipaper.io/", "0001112");
+//   console.log(123);
+// }, 5000);
 
 const getDataFromUploadedFile = (buffer: Buffer) => {
   return new Promise((resolve, reject) => {
@@ -209,6 +207,7 @@ const getLeadDataFromGPT = async (csvData: CsvDataItem[]) => {
 
 const createCSV = (data: CsvDataItem[]) => {
   const headers = Object.keys(data[0]);
+  console.log(headers, "header");
   // Create a CSV string
   let csv = headers.join(",") + "\n";
   data.forEach((row: any) => {
@@ -306,14 +305,13 @@ app.post("/upload", async (req, res) => {
         const chatGPTArray: CsvDataItem[] = await getLeadDataFromGPT(
           dataFromUploadedFile
         );
-
         const combinedArray = combineTwoDataArrays(
           dataFromUploadedFile,
           chatGPTArray
         );
-
+        console.log(combinedArray);
         const csvToExport = createCSV(combinedArray);
-
+        console.log(csvToExport);
         const randomFileName: string = crypto.randomUUID();
 
         res.setHeader(
