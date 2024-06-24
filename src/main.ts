@@ -1,21 +1,27 @@
 import { readFileSync, writeFileSync } from "fs";
 import { config } from "dotenv";
+import fastCsv from "fast-csv";
 import OpenAI from "openai";
 import multer from "multer";
 import stream from "stream";
-import express from "express";
-import fastCsv from "fast-csv";
+import express, { Request } from "express";
 import cors, { CorsOptions } from "cors";
 
 import { createJsonTranslator, createOpenAILanguageModel } from "typechat";
 import { createTypeScriptJsonValidator } from "typechat/ts";
 
 import TargetSchema from "./TargetSchema";
-import CsvDataItem from "./Interfaces";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 
 config();
+
+interface CsvDataItem {
+  url: string;
+  id: string;
+  name: string;
+  [key: string]: string;
+}
 
 // Load default instructions
 const defaultInstructionsObj = JSON.parse(
@@ -50,7 +56,7 @@ const corsOptions: CorsOptions = {
       callback(new Error(`Origin not allowed by CORS: ${origin}`), false);
     }
   },
-  methods: "GET, POST", // Specify allowed methods globally
+  methods: "GET, POST",
   allowedHeaders: "Content-Type, Authorization",
   credentials: true,
 };
@@ -114,8 +120,8 @@ function checkFileType(
 
 // Set up OpenAI
 // Load up the contents of "Response" schema.
-const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
-const __dirname = dirname(__filename);
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 const schema = readFileSync(path.join(__dirname, "TargetSchema.ts"), "utf8");
 const validator = createTypeScriptJsonValidator<TargetSchema>(schema, "Target");
 
@@ -158,13 +164,13 @@ const runGPT = async (website?: string, recordId?: string) => {
         content: `url: ${website} id: ${recordId}`,
       },
     ],
-    temperature: 1, // Higher values means the model will take more risks.
+    temperature: 0.5, // Higher values means the model will take more risks.
     max_tokens: 4000, // The maximum number of tokens to generate in the completion.
     model: "gpt-4o",
   });
 
   const initialResult =
-    chatCompletion?.choices?.[0]?.message?.content ?? ("No text" as any);
+    chatCompletion?.choices?.[0]?.message?.content ?? ("No text" as string);
 
   console.log(initialResult);
   const removedBreaksText = initialResult.replace(/(\r\n|\n|\r)/gm, "");
@@ -208,7 +214,7 @@ const createCSV = (data: CsvDataItem[]) => {
   console.log(headers, "header");
   // Create a CSV string
   let csv = headers.join(",") + "\n";
-  data.forEach((row: any) => {
+  data.forEach((row) => {
     let values = headers.map((header) => {
       let value = row[header];
       // Escape double quotes by doubling them and wrap values in double quotes
@@ -251,7 +257,7 @@ const combineTwoDataArrays = (
   return combinedArray;
 };
 
-const updateUserInstructions = (req: any) => {
+const updateUserInstructions = (req: Request) => {
   const newUserInstructions = req.body;
 
   let textToModify = JSON.stringify(defaultInstructionsObj);
@@ -293,7 +299,7 @@ app.post("/updateUserInstructions", (req, res) => {
 
 app.post("/upload", async (req, res) => {
   try {
-    upload(req, res, async (err) => {
+    upload(req, res, async () => {
       if (req.file === undefined) {
         res.status(400).send("Error: No File Selected!");
       } else {
