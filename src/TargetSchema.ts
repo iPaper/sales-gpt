@@ -9,7 +9,6 @@ export type Target = {
     | "Both e-commerce and physical stores"
     | "Physical stores";
   monthlyOrMoreCatalogs: "Yes" | "No" | "Maybe" | "Not sure";
-  catalogLinks: string[] | "N/A";
 };
 
 export default Target;

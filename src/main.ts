@@ -140,8 +140,6 @@ const getInstructions = () => {
   4. ${userInstructions.type}
 
   5. ${userInstructions.model}
-
-
 `;
 
   return instructions;
@@ -161,7 +159,7 @@ const runGPT = async (website?: string, recordId?: string) => {
       },
     ],
     temperature: 1, // Higher values means the model will take more risks.
-    max_tokens: 1000, // The maximum number of tokens to generate in the completion.
+    max_tokens: 4000, // The maximum number of tokens to generate in the completion.
     model: "gpt-4o",
   });
 
