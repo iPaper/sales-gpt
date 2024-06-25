@@ -29,7 +29,7 @@ npm run dev runs dev with --watch flag.
 This is just the backend for handling provided CSV files with url, id, and name headers(column names) only!
 The information is returned in CSV format
 
-[Front-end repository](https://github.com/boop-bap/gpt/tree/TypeChat-page)
+[Front-end repository](https://github.com/boop-bap/gpt/tree/UI)
 
 ## Default headers(column names) and answers in output CSV file 
  
