@@ -1,51 +1,27 @@
-import { readFileSync, writeFileSync } from "fs";
-import { config } from "dotenv";
-import fastCsv from "fast-csv";
-import OpenAI from "openai";
-import multer from "multer";
-import stream from "stream";
-import express, { Request } from "express";
-import cors, { CorsOptions } from "cors";
+import { readFileSync } from "fs";
+import express from "express";
+import cors from "cors";
 
-import { createJsonTranslator, createOpenAILanguageModel } from "typechat";
-import { createTypeScriptJsonValidator } from "typechat/ts";
-
-import TargetSchema from "./TargetSchema";
-import path, { dirname } from "path";
-import { fileURLToPath } from "url";
-
-config();
-
-interface CsvDataItem {
-  url: string;
-  id: string;
-  name: string;
-  [key: string]: string;
-}
-
-// Load default instructions
-const defaultInstructionsObj = JSON.parse(
-  readFileSync("json/defaultInstructions.json").toString()
-);
-
-// Load user instructions
-let userInstructionsObj = JSON.parse(
-  readFileSync("json/userInstructionsSave.json").toString()
-);
+import { CsvDataItem, DataItemFromGPT } from "./interfaces";
+import multerUpload from "./multerUpload";
+import runGPT from "./runGPT";
+import {
+  getDataFromUploadedFile,
+  updateUserInstructions,
+  getLeadDataFromGPT,
+  createCSV,
+} from "./dataManipulationFunctions";
 
 const app = express();
 
-let { userInstructions, defaultInstructions, headersToAdd } =
-  userInstructionsObj;
-
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const allowedOrigins = [
   "http://127.0.0.1:5500",
   "http://localhost:5500",
   "https://boop-bap.github.io",
 ];
 
-const corsOptions: CorsOptions = {
+const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     if (origin === undefined) {
       callback(null, false);
@@ -65,257 +41,46 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const options = {
-  objectMode: true,
-  delimiter: ",",
-  quote: null,
-  headers: true,
-  renameHeaders: false,
-};
-
-// Initialize multer to handle file uploads in memory
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10000000 }, // Limit file size to 10MB
-  fileFilter: (req, file, cb) => {
-    checkFileType(file, cb);
-  },
-}).single("file");
-
-// Check file type
-function checkFileType(
-  file: Express.Multer.File,
-  cb: multer.FileFilterCallback
-) {
-  const filetypes = /csv/; // Allowed file extension
-  const extname = filetypes.test(file.originalname.toLowerCase());
-  const mimetype =
-    file.mimetype === "text/csv" ||
-    file.mimetype === "application/vnd.ms-excel";
-
-  if (extname && mimetype) {
-    return cb(null, true);
-  } else {
-    const err = new Error("Error: CSV Files Only!");
-    return cb(err);
-  }
-}
-
-// const targetTypeString = `
-// export type Target = {
-//   online: "Yes" | "No";
-//   url: string;
-//   id: string;
-//   type: "B2B" | "B2C" | "Both B2B and B2C" | "Agency";
-//   model:
-//     | "Retail"
-//     | "E-commerce"
-//     | "Both e-commerce and physical stores"
-//     | "Physical stores";
-//   catalogs: "Yes" | "No" | "Maybe";
-//   catalogLinks: string[] | "N/A";
-// };
-// `;
-
-// Set up OpenAI
-// Load up the contents of "Response" schema.
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-const schema = readFileSync(path.join(__dirname, "TargetSchema.ts"), "utf8");
-const validator = createTypeScriptJsonValidator<TargetSchema>(schema, "Target");
-
-const key = process.env.OPENAI_API_KEY as string;
-const model = createOpenAILanguageModel(key, "gpt-4o");
-const translator = createJsonTranslator(model, validator);
-
-const openai = new OpenAI({
-  apiKey: key,
-});
-
-const getInstructions = () => {
-  const instructions = `
-  Answer should be as broad and as big as possible with no speculation and really extensively long and detailed with exclusive analysis on each point where and what was found.
-
-  1. Include the id and url provided in the answer and display it only here once.
-
-  2. Please check if the website provided is online. If No skip the checks.
-
-  3. ${userInstructions.monthlyOrMoreCatalogs}
-
-  4. ${userInstructions.type}
-
-  5. ${userInstructions.model}
-`;
-
-  return instructions;
-};
-
-const runGPT = async (website?: string, recordId?: string) => {
-  const chatCompletion = await openai.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        name: "TestV1",
-        content: getInstructions(),
-      },
-      {
-        role: "user",
-        content: `url: ${website} id: ${recordId}`,
-      },
-    ],
-    temperature: 0.5, // Higher values means the model will take more risks.
-    max_tokens: 4000, // The maximum number of tokens to generate in the completion.
-    model: "gpt-4o",
-  });
-
-  const initialResult =
-    chatCompletion?.choices?.[0]?.message?.content ?? ("No text" as string);
-
-  console.log(initialResult);
-  const removedBreaksText = initialResult.replace(/(\r\n|\n|\r)/gm, "");
-
-  const finalAnswer = (await translator.translate(removedBreaksText)) as any;
-  return finalAnswer.data;
-};
-
-// setInterval(async () => {
-//   await runGPT("https://www.ipaper.io/", "0001112");
-//   console.log(123);
-// }, 5000);
-
-const getDataFromUploadedFile = (buffer: Buffer) => {
-  return new Promise((resolve, reject) => {
-    const results = [] as CsvDataItem[];
-
-    const bufferStream = new stream.PassThrough();
-    const readableStream = bufferStream.end(buffer);
-
-    fastCsv
-      .parseStream(readableStream, options)
-      .on("data", (data: CsvDataItem) => results.push(data))
-      .on("end", () => resolve(results))
-      .on("error", (err: Error) => reject(err));
-  });
-};
-
-const getLeadDataFromGPT = async (csvData: CsvDataItem[]) => {
-  const gptPromises = csvData.map((item: CsvDataItem) => {
-    return runGPT(item.url, item.id);
-  });
-
-  const results = await Promise.all(gptPromises);
-
-  return results;
-};
-
-const createCSV = (data: CsvDataItem[]) => {
-  const headers = Object.keys(data[0]);
-  console.log(headers, "header");
-  // Create a CSV string
-  let csv = headers.join(",") + "\n";
-  data.forEach((row) => {
-    let values = headers.map((header) => {
-      let value = row[header];
-      // Escape double quotes by doubling them and wrap values in double quotes
-      if (typeof value === "string") {
-        value = value.replace(/"/g, '""');
-      }
-      return `"${value}"`;
-    });
-    csv += values.join(",") + "\n";
-  });
-
-  return csv;
-
-  // Write the CSV string to a file locally
-  // writeFileSync(`test copy ${randomFileName}.csv`, csv);
-};
-
-const combineTwoDataArrays = (
-  csvArray: CsvDataItem[],
-  gptArray: CsvDataItem[]
-) => {
-  const combinedArray = [] as CsvDataItem[];
-
-  csvArray.forEach((csvArrayItem: CsvDataItem) => {
-    const tempObj = csvArrayItem;
-
-    gptArray.forEach((leadItem: CsvDataItem) => {
-      if (leadItem?.id == csvArrayItem?.id && leadItem) {
-        headersToAdd.forEach((columnName: string) => {
-          if (!tempObj[columnName]) {
-            tempObj[columnName] = leadItem[columnName];
-          }
-        });
-      }
-    });
-
-    combinedArray.push(tempObj);
-  });
-
-  return combinedArray;
-};
-
-const updateUserInstructions = (req: Request) => {
-  const newUserInstructions = req.body;
-
-  let textToModify = JSON.stringify(defaultInstructionsObj);
-
-  for (let key in newUserInstructions) {
-    let placeholder = new RegExp(`\\$\\{${key}\\}`, "g");
-    textToModify = textToModify.replace(placeholder, newUserInstructions[key]);
-  }
-  writeFileSync("json/userInstructionsSave.json", textToModify);
-
-  userInstructionsObj = JSON.parse(
-    readFileSync("json/userInstructionsSave.json").toString()
-  );
-
-  userInstructions = userInstructionsObj.userInstructions;
-};
-
 //GET REQUESTS ---------------------------
 app.get("/", (req, res) => {
-  res.send("Hello");
-  res.status(200);
+  res.status(200).send("Hello");
 });
 
 app.get("/defaultInstructions", (req, res) => {
-  res.send(defaultInstructions);
-  res.status(200);
+  const { defaultInstructions } = JSON.parse(
+    readFileSync("json/userInstructionsSave.json").toString()
+  );
+
+  res.status(200).send(defaultInstructions);
 });
 
 app.get("/userSavedInstructions", (req, res) => {
-  res.send(userInstructions);
-  res.status(200);
+  const { userInstructions } = JSON.parse(
+    readFileSync("json/userInstructionsSave.json").toString()
+  );
+
+  res.status(200).send(userInstructions);
 });
 
 //POST REQUESTS ---------------------------
-app.post("/updateUserInstructions", (req, res) => {
-  updateUserInstructions(req);
-  res.status(200).send("Instructions updated successfully");
-});
-
 app.post("/upload", async (req, res) => {
   try {
-    upload(req, res, async () => {
+    const { headersToAdd } = JSON.parse(
+      readFileSync("json/userInstructionsSave.json").toString()
+    );
+
+    multerUpload(req, res, async () => {
       if (req.file === undefined) {
         res.status(400).send("Error: No File Selected!");
       } else {
         const dataFromUploadedFile = (await getDataFromUploadedFile(
           req.file.buffer
         )) as CsvDataItem[];
-        const chatGPTArray: CsvDataItem[] = await getLeadDataFromGPT(
+        const chatGPTArray: DataItemFromGPT[] = await getLeadDataFromGPT(
           dataFromUploadedFile
         );
-        const combinedArray = combineTwoDataArrays(
-          dataFromUploadedFile,
-          chatGPTArray
-        );
-        console.log(combinedArray);
-        const csvToExport = createCSV(combinedArray);
-        console.log(csvToExport);
+
+        const csvToExport = createCSV(chatGPTArray, headersToAdd);
         const randomFileName: string = crypto.randomUUID();
 
         res.setHeader(
@@ -329,6 +94,11 @@ app.post("/upload", async (req, res) => {
   } catch (err) {
     res.status(500).send(err);
   }
+});
+
+app.post("/updateUserInstructions", (req, res) => {
+  updateUserInstructions(req.body);
+  res.status(200).send("Instructions updated successfully");
 });
 
 app.post("/check", async (req, res) => {
