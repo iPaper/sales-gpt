@@ -26,8 +26,8 @@ npm run dev runs dev with --watch flag.
 
 ## Things to consider 
 
-This is just the backend for handling provided csv files with url, id, and name headers(column names) only!.
-The information is returned in CSV format 
+This is just the backend for handling provided CSV files with url, id, and name headers(column names) only!
+The information is returned in CSV format
 
 [Front-end repository](https://github.com/boop-bap/gpt/tree/TypeChat-page)
 
