@@ -90,19 +90,17 @@
   </body>
 </html>
 <script>
+  const URL = document.location.origin;
   const allTextAreas = document.querySelectorAll("textarea");
 
   const loadDefaultInstructions = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:3000/defaultInstructions",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${URL}/defaultInstructions`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
       if (!response.ok) {
         throw new Error("Network response was not ok " + response.statusText);
       }
@@ -119,15 +117,12 @@
 
   const loadSavedInstructions = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:3000/userSavedInstructions",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${URL}/userSavedInstructions`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
       if (!response.ok) {
         throw new Error("Network response was not ok " + response.statusText);
       }
@@ -154,16 +149,13 @@
     });
 
     try {
-      const response = await fetch(
-        "http://localhost:3000/updateUserInstructions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(objToSend),
-        }
-      );
+      const response = await fetch(`${URL}/updateUserInstructions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(objToSend),
+      });
       if (!isForm) window.alert("Instructions loaded");
     } catch (error) {
       console.error("There was a problem with the fetch operation:", error);
@@ -191,26 +183,25 @@
   }
 
   const runCheck = async () => {
-    const url = document.querySelector("#urlInput").value;
+    const urlToCheck = document.querySelector("#urlInput").value;
     const websiteInfo = document.querySelector("#websiteInfo");
     const spinner = document.querySelector("#loading-spinner");
-
     // await updateUserInstructions(true);
 
     spinner.style.display = "block";
-    if (!isValidURL(url)) {
+    if (!isValidURL(urlToCheck)) {
       spinner.style.display = "none";
       window.alert("Check url format");
       return;
     }
 
     try {
-      const response = await fetch("http://localhost:3000/check", {
+      const response = await fetch(`${URL}/check`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ urlToCheck }),
       });
 
       const { answer } = await response.json();
