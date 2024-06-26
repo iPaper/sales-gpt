@@ -1,14 +1,14 @@
 <img src="https://schertzanimalhospital.com/wp-content/uploads/2018/03/Schertz_iStock-836716796_medium-1024x639.jpg" alt="Logo of the project" align="right">
 
 # Lead Sniffer
-A tool to analyze provided websites for specific business information, such as catalogs, business type, and model. Useful for sniffing out possible clients.
+A tool to analyze websites for specific business details like catalogs, business type, and model. It's useful for sniffing out potential clients. First, it browses the provided URLs with the given criteria and returns a detailed description of each site. Then, it analyzes the text to see if it meets the criteria and provides the results in the specified format.
 
 
 ## Installing / Getting started
 
 A quick introduction of the minimal setup you need to get going
 
--- Create your own env file with your OPENAI_API_KEY
+-- Create your own env file with your OPENAI_API_KEY and PORT
 
 ```shell
 npm i
@@ -24,20 +24,33 @@ npm run start
 
 npm run dev runs dev with --watch flag.
 
+## TS to JS guide
+
+```shell
+npm run build
+```
+OR
+
+```shell
+npm run start:build
+```
+
+to build and run js
+
 ## Things to consider 
 
 This is just the backend for handling provided CSV files with url, id, and name headers(column names) only!
 The information is returned in CSV format
 
-[Front-end repository](https://github.com/boop-bap/gpt/tree/UI)
+[Front-end repository](https://github.com/boop-bap/gpt/tree/UI) or use the included public folder in this repository.
 
 ## Default headers(column names) and answers in output CSV file 
  
-Name
+Id
 
 Url
 
-Id
+Name
 
 Online: "Yes" | "No"
 
