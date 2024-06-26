@@ -9,7 +9,6 @@
       href="https://cdns.iconmonstr.com/wp-content/releases/preview/2018/240/iconmonstr-random-thin.png"
     />
     <title>File Upload Form</title>
-    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="container">
@@ -196,7 +195,7 @@
     const websiteInfo = document.querySelector("#websiteInfo");
     const spinner = document.querySelector("#loading-spinner");
 
-    await updateUserInstructions(true);
+    // await updateUserInstructions(true);
 
     spinner.style.display = "block";
     if (!isValidURL(url)) {
@@ -214,19 +213,17 @@
         body: JSON.stringify({ url }),
       });
 
-      const responseObj = (await response.json()).answer;
-
-      console.log(responseObj, "responseObj");
+      const { answer } = await response.json();
 
       websiteInfo.innerHTML = `
-      <ul>
-        <li><strong>Website:</strong> ${responseObj.url}</li>
-        <li><strong>Monthly or more often catalogs:</strong> ${responseObj.monthlyOrMoreCatalogs}</li>
-        <li><strong>Business model:</strong> ${responseObj.model}</li>
-        <li><strong>Online:</strong> ${responseObj.online}</li>
-        <li><strong>Business type:</strong> ${responseObj.type}</li>
-     </ul>
-          `;
+        <ul>
+          <li><strong>Website:</strong> ${answer.url}</li>
+          <li><strong>Monthly or more often catalogs:</strong> ${answer.monthlyOrMoreCatalogs}</li>
+          <li><strong>Business model:</strong> ${answer.model}</li>
+          <li><strong>Online:</strong> ${answer.online}</li>
+          <li><strong>Business type:</strong> ${answer.type}</li>
+       </ul>
+         `;
     } catch (error) {
       console.error("There was a problem with the fetch operation:", error);
     } finally {

@@ -29,7 +29,7 @@ const targetTypeString = `
       | "E-commerce"
       | "Both e-commerce and physical stores"
       | "Physical stores";
-    monthlyOrMoreCatalogs: "Yes" | "No" | "Maybe | "Not sure";
+    monthlyOrMoreCatalogs: "Yes" | "No" | "Maybe" | "Not sure";
   };
   `;
 
@@ -82,15 +82,15 @@ const runGPT = async (website?: string, recordId?: string) => {
         content: `url: ${website} id: ${recordId}`,
       },
     ],
-    temperature: 0.4, // Higher values means the model will take more risks.
-    max_tokens: 1000, // The maximum number of tokens to generate in the completion. 0-4096
+    temperature: 0, // Higher values means the model will take more risks.
+    max_tokens: 4000, // The maximum number of tokens to generate in the completion. 0-4096
     model: "gpt-4o",
   });
 
   const initialResult =
     chatCompletion?.choices?.[0]?.message?.content ?? ("No text" as string);
-
   console.log(initialResult);
+
   const removedBreaksText = initialResult.replace(/(\r\n|\n|\r)/gm, "");
 
   const finalAnswer = (await translator.translate(removedBreaksText)) as any;

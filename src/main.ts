@@ -14,7 +14,7 @@ import {
 
 const app = express();
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 const allowedOrigins = [
   "http://127.0.0.1:5500",
   "http://localhost:5500",
@@ -23,6 +23,7 @@ const allowedOrigins = [
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
+    console.log(origin);
     if (origin === undefined) {
       callback(null, false);
     } else if (allowedOrigins.includes(origin)) {
@@ -103,9 +104,7 @@ app.post("/updateUserInstructions", (req, res) => {
 
 app.post("/check", async (req, res) => {
   const url = req.body.url;
-
   const answer = await runGPT(url, "00001");
-
   res.status(200).send({ answer });
 });
 
