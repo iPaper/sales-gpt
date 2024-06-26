@@ -1,9 +1,9 @@
 import fastCsv from "fast-csv";
 import stream from "stream";
 
-import { CsvDataItem, DataItemFromGPT } from "./interfaces";
+import { CsvDataItem, DataItemFromGPT } from "./interfaces.js";
 import { readFileSync, writeFileSync } from "fs";
-import runGPT from "./runGPT";
+import runGPT from "./runGPT.js";
 
 const fastCsvOptions = {
   objectMode: true,

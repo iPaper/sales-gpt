@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "echo | tsx -r dotenv/config --watch src/main.ts",
-    "start": "echo | tsx -r dotenv/config  src/main.ts"
+    "start": "echo | tsx -r dotenv/config  src/main.ts",
+    "build": "tsc",
+    "start:build": "tsc && node -r dotenv/config dist/main.js"
   },
   "author": "",
   "license": "ISC",

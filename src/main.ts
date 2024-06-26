@@ -2,15 +2,15 @@ import { readFileSync } from "fs";
 import express from "express";
 import cors from "cors";
 
-import { CsvDataItem, DataItemFromGPT } from "./interfaces";
-import multerUpload from "./multerUpload";
-import runGPT from "./runGPT";
+import { CsvDataItem, DataItemFromGPT } from "./interfaces.js";
+import multerUpload from "./multerUpload.js";
+import runGPT from "./runGPT.js";
 import {
   getDataFromUploadedFile,
   updateUserInstructions,
   getLeadDataFromGPT,
   createCSV,
-} from "./dataManipulationFunctions";
+} from "./dataManipulationFunctions.js";
 
 const app = express();
 
