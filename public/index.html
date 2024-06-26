@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://cdns.iconmonstr.com/wp-content/releases/preview/2018/240/iconmonstr-random-thin.png"
+    />
+    <title>File Upload Form</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Upload a CSV file, or enter a link</h1>
+
+      <div>
+        <a href="yes.csv" download="yes.csv"
+          >Download checked list of websites with catalogs for testing</a
+        >
+      </div>
+      <div>
+        <a href="no.csv" download="no.csv"
+          >Download checked list of websites with no catalogs for testing</a
+        >
+      </div>
+
+      <section class="check-website">
+        <h2>Check the website</h2>
+        <label for="urlInput">URL</label>
+        <input id="urlInput" type="text" placeholder="Enter URL" />
+        <button id="check">Run Check</button>
+        <div id="websiteInfo"></div>
+        <div id="loading-spinner" class="spinner"></div>
+      </section>
+
+      <form
+        id="form"
+        action="http://localhost:3000/upload"
+        method="post"
+        enctype="multipart/form-data"
+        accept=".csv"
+      >
+        <label for="file">Choose a file:</label>
+        <input type="file" id="file" name="file" required />
+        <button type="button" id="uploadBtn">Upload</button>
+
+        <h2>Instructions for the Search</h2>
+
+        <div class="textAreaBox">
+          <label for="monthlyOrMoreCatalogs"
+            >Search for leaflets/catalogs/brochures</label
+          >
+          <textarea
+            id="monthlyOrMoreCatalogs"
+            name="monthlyOrMoreCatalogs"
+            placeholder="Enter search criteria..."
+          ></textarea>
+        </div>
+        <div class="textAreaBox">
+          <label for="type">Search for business type/types</label>
+          <textarea
+            id="type"
+            name="type"
+            placeholder="Enter business type..."
+          ></textarea>
+        </div>
+        <div class="textAreaBox">
+          <label for="model">Search for business model/models</label>
+          <textarea
+            id="model"
+            name="model"
+            placeholder="Enter business model..."
+          ></textarea>
+        </div>
+      </form>
+
+      <div class="buttons">
+        <button type="button" id="updateUserInstructions">
+          Save Instructions
+        </button>
+        <button type="button" id="loadDefault">
+          Load Default Instructions
+        </button>
+        <button type="button" id="loadSavedInstructions">
+          Load Saved Instructions
+        </button>
+      </div>
+    </div>
+  </body>
+</html>
+<script>
+  const allTextAreas = document.querySelectorAll("textarea");
+
+  const loadDefaultInstructions = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:3000/defaultInstructions",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Network response was not ok " + response.statusText);
+      }
+      const defaultSettings = JSON.parse(await response.text());
+      allTextAreas.forEach((textArea) => {
+        textArea.value = defaultSettings[textArea.id];
+      });
+
+      window.alert("Instructions loaded");
+    } catch (error) {
+      console.error("There was a problem with the fetch operation:", error);
+    }
+  };
+
+  const loadSavedInstructions = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:3000/userSavedInstructions",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Network response was not ok " + response.statusText);
+      }
+      const userInstructions = JSON.parse(await response.text());
+
+      allTextAreas.forEach((textArea) => {
+        textArea.value = userInstructions[textArea.id];
+      });
+
+      window.alert("Instructions loaded");
+    } catch (error) {
+      console.error("There was a problem with the fetch operation:", error);
+    }
+  };
+
+  const updateUserInstructions = async (isForm = false) => {
+    const objToSend = {};
+
+    allTextAreas.forEach((textArea) => {
+      objToSend[textArea.id] = textArea.value = textArea.value.replace(
+        /\n/g,
+        " "
+      );
+    });
+
+    try {
+      const response = await fetch(
+        "http://localhost:3000/updateUserInstructions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(objToSend),
+        }
+      );
+      if (!isForm) window.alert("Instructions loaded");
+    } catch (error) {
+      console.error("There was a problem with the fetch operation:", error);
+    }
+  };
+
+  const submitForm = async () => {
+    await updateUserInstructions(true);
+    document.querySelector("#form").submit();
+  };
+
+  // loadDefaultInstructions();
+
+  function isValidURL(url) {
+    const pattern = new RegExp(
+      "^(https?:\\/\\/)?" + // protocol
+        "((([a-zA-Z\\d]([a-zA-Z\\d-]*[a-zA-Z\\d])*)\\.?)+[a-zA-Z]{2,}|" + // domain name
+        "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
+        "(\\:\\d+)?(\\/[-a-zA-Z\\d%@_.~+&:]*)*" + // port and path
+        "(\\?[;&a-zA-Z\\d%@_.,~+&:=-]*)?" + // query string
+        "(\\#[-a-zA-Z\\d_]*)?$",
+      "i"
+    ); // fragment locator
+    return !!pattern.test(url);
+  }
+
+  const runCheck = async () => {
+    const url = document.querySelector("#urlInput").value;
+    const websiteInfo = document.querySelector("#websiteInfo");
+    const spinner = document.querySelector("#loading-spinner");
+
+    await updateUserInstructions(true);
+
+    spinner.style.display = "block";
+    if (!isValidURL(url)) {
+      spinner.style.display = "none";
+      window.alert("Check url format");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3000/check", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      const responseObj = (await response.json()).answer;
+
+      console.log(responseObj, "responseObj");
+
+      websiteInfo.innerHTML = `
+      <ul>
+        <li><strong>Website:</strong> ${responseObj.url}</li>
+        <li><strong>Monthly or more often catalogs:</strong> ${responseObj.monthlyOrMoreCatalogs}</li>
+        <li><strong>Business model:</strong> ${responseObj.model}</li>
+        <li><strong>Online:</strong> ${responseObj.online}</li>
+        <li><strong>Business type:</strong> ${responseObj.type}</li>
+     </ul>
+          `;
+    } catch (error) {
+      console.error("There was a problem with the fetch operation:", error);
+    } finally {
+      spinner.style.display = "none";
+    }
+  };
+
+  const setListenerAndFunctions = async (id, functionToRun) => {
+    const btn = document.querySelector(`#${id}`);
+    btn.addEventListener("click", async (event) => {
+      event.preventDefault();
+      await functionToRun(event);
+    });
+  };
+
+  setListenerAndFunctions("check", runCheck);
+  setListenerAndFunctions("uploadBtn", submitForm);
+  setListenerAndFunctions("loadDefault", loadDefaultInstructions);
+  setListenerAndFunctions("loadSavedInstructions", loadSavedInstructions);
+  setListenerAndFunctions("updateUserInstructions", updateUserInstructions);
+</script>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .container {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    width: 100%;
+    overflow-y: auto;
+    max-height: 90vh; /* Adjust as needed to fit the viewport */
+  }
+
+  h1,
+  h2 {
+    color: #333;
+    text-align: center;
+  }
+
+  .check-website {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    margin: 10px 0 5px;
+    color: #555;
+  }
+
+  input[type="text"],
+  input[type="file"],
+  textarea {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: block;
+  }
+
+  button {
+    background-color: #4caf50;
+    color: white;
+    padding: 10px 20px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    display: inline-block;
+    width: 100%;
+  }
+
+  button:hover {
+    background-color: #45a049;
+  }
+
+  .textAreaBox {
+    margin-bottom: 20px;
+  }
+
+  .textAreaBox label {
+    font-weight: bold;
+  }
+
+  textarea {
+    height: 100px;
+    resize: vertical;
+  }
+
+  .buttons {
+    text-align: center;
+  }
+
+  .spinner {
+    display: none;
+    text-align: center;
+  }
+
+  .spinner::before {
+    content: "Loading...";
+    display: inline-block;
+    padding: 10px 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f1f1f1;
+  }
+</style>
