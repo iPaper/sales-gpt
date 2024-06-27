@@ -33,10 +33,9 @@
         <div id="websiteInfo"></div>
         <div id="loading-spinner" class="spinner"></div>
       </section>
-
       <form
         id="form"
-        action="http://localhost:3000/upload"
+        action="http://salesgpt.ipaper-dev.io:3000/upload"
         method="post"
         enctype="multipart/form-data"
         accept=".csv"
@@ -44,6 +43,7 @@
         <label for="file">Choose a file:</label>
         <input type="file" id="file" name="file" required />
         <button type="button" id="uploadBtn">Upload</button>
+        <div id="form-loading-spinner" class="spinner"></div>
 
         <h2>Instructions for the Search</h2>
 
@@ -89,153 +89,7 @@
     </div>
   </body>
 </html>
-<script>
-  const URL = document.location.origin;
-  const allTextAreas = document.querySelectorAll("textarea");
-
-  const loadDefaultInstructions = async () => {
-    try {
-      const response = await fetch(`${URL}/defaultInstructions`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) {
-        throw new Error("Network response was not ok " + response.statusText);
-      }
-      const defaultSettings = JSON.parse(await response.text());
-      allTextAreas.forEach((textArea) => {
-        textArea.value = defaultSettings[textArea.id];
-      });
-
-      window.alert("Instructions loaded");
-    } catch (error) {
-      console.error("There was a problem with the fetch operation:", error);
-    }
-  };
-
-  const loadSavedInstructions = async () => {
-    try {
-      const response = await fetch(`${URL}/userSavedInstructions`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) {
-        throw new Error("Network response was not ok " + response.statusText);
-      }
-      const userInstructions = JSON.parse(await response.text());
-
-      allTextAreas.forEach((textArea) => {
-        textArea.value = userInstructions[textArea.id];
-      });
-
-      window.alert("Instructions loaded");
-    } catch (error) {
-      console.error("There was a problem with the fetch operation:", error);
-    }
-  };
-
-  const updateUserInstructions = async (isForm = false) => {
-    const objToSend = {};
-
-    allTextAreas.forEach((textArea) => {
-      objToSend[textArea.id] = textArea.value = textArea.value.replace(
-        /\n/g,
-        " "
-      );
-    });
-
-    try {
-      const response = await fetch(`${URL}/updateUserInstructions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(objToSend),
-      });
-      if (!isForm) window.alert("Instructions loaded");
-    } catch (error) {
-      console.error("There was a problem with the fetch operation:", error);
-    }
-  };
-
-  const submitForm = async () => {
-    await updateUserInstructions(true);
-    document.querySelector("#form").submit();
-  };
-
-  // loadDefaultInstructions();
-
-  function isValidURL(url) {
-    const pattern = new RegExp(
-      "^(https?:\\/\\/)?" + // protocol
-        "((([a-zA-Z\\d]([a-zA-Z\\d-]*[a-zA-Z\\d])*)\\.?)+[a-zA-Z]{2,}|" + // domain name
-        "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
-        "(\\:\\d+)?(\\/[-a-zA-Z\\d%@_.~+&:]*)*" + // port and path
-        "(\\?[;&a-zA-Z\\d%@_.,~+&:=-]*)?" + // query string
-        "(\\#[-a-zA-Z\\d_]*)?$",
-      "i"
-    ); // fragment locator
-    return !!pattern.test(url);
-  }
-
-  const runCheck = async () => {
-    const urlToCheck = document.querySelector("#urlInput").value;
-    const websiteInfo = document.querySelector("#websiteInfo");
-    const spinner = document.querySelector("#loading-spinner");
-    // await updateUserInstructions(true);
-
-    spinner.style.display = "block";
-    if (!isValidURL(urlToCheck)) {
-      spinner.style.display = "none";
-      window.alert("Check url format");
-      return;
-    }
-
-    try {
-      const response = await fetch(`${URL}/check`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ urlToCheck }),
-      });
-
-      const { answer } = await response.json();
-
-      websiteInfo.innerHTML = `
-        <ul>
-          <li><strong>Website:</strong> ${answer.url}</li>
-          <li><strong>Monthly or more often catalogs:</strong> ${answer.monthlyOrMoreCatalogs}</li>
-          <li><strong>Business model:</strong> ${answer.model}</li>
-          <li><strong>Online:</strong> ${answer.online}</li>
-          <li><strong>Business type:</strong> ${answer.type}</li>
-       </ul>
-         `;
-    } catch (error) {
-      console.error("There was a problem with the fetch operation:", error);
-    } finally {
-      spinner.style.display = "none";
-    }
-  };
-
-  const setListenerAndFunctions = async (id, functionToRun) => {
-    const btn = document.querySelector(`#${id}`);
-    btn.addEventListener("click", async (event) => {
-      event.preventDefault();
-      await functionToRun(event);
-    });
-  };
-
-  setListenerAndFunctions("check", runCheck);
-  setListenerAndFunctions("uploadBtn", submitForm);
-  setListenerAndFunctions("loadDefault", loadDefaultInstructions);
-  setListenerAndFunctions("loadSavedInstructions", loadSavedInstructions);
-  setListenerAndFunctions("updateUserInstructions", updateUserInstructions);
-</script>
+<script src="index.js"></script>
 
 <style>
   body {
@@ -334,5 +188,10 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     background-color: #f1f1f1;
+  }
+
+  .disabled {
+    pointer-events: none;
+    opacity: 0.6;
   }
 </style>
