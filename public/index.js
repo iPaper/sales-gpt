@@ -100,7 +100,7 @@ const updateUserInstructions = async (isForm = false) => {
   }
 };
 
-async function submitForm() {
+const submitForm = async () => {
   if (checkEmptyTextAreas()) {
     window.alert("Please fill in all the text areas.");
     return;
@@ -145,7 +145,7 @@ async function submitForm() {
     formSpinner.style.display = "none";
     disableButtons(false);
   }
-}
+};
 
 loadDefaultInstructions();
 

@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 import { readFileSync } from "fs";
-import { createJsonTranslator, createOpenAILanguageModel } from "typechat";
-import { createTypeScriptJsonValidator } from "typechat/ts";
 import { DataItemFromGPT } from "./interfaces.js";
+import { createTypeScriptJsonValidator } from "typechat/ts";
+import { createJsonTranslator, createOpenAILanguageModel } from "typechat";
 
 export type Target = {
   "Company name": string;

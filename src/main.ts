@@ -1,9 +1,10 @@
-import { readFileSync } from "fs";
-import express from "express";
 import cors from "cors";
+import express from "express";
 
-import multerUpload from "./multerUpload.js";
 import runGPT from "./runGPT.js";
+import multerUpload from "./multerUpload.js";
+
+import { readFileSync } from "fs";
 import {
   getDataFromUploadedFile,
   updateUserInstructions,
@@ -89,7 +90,7 @@ app.post("/upload", async (req, res) => {
 
         res.setHeader(
           "Content-Disposition",
-          `attachment; filename="${randomFileName}.xlxs"`
+          `attachment; filename="${randomFileName}.xlsx"`
         );
         res.setHeader(
           "Content-Type",
