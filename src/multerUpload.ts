@@ -4,14 +4,15 @@ import multer from "multer";
 const storage = multer.memoryStorage();
 
 // Check file type
-function checkFileType(
+const checkFileType = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
-) {
-  const filetypes = /csv/; // Allowed file extension
+) => {
+  const filetypes = /xlsx|xls/; // Allowed file extension
   const extname = filetypes.test(file.originalname.toLowerCase());
   const mimetype =
-    file.mimetype === "text/csv" ||
+    file.mimetype ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
     file.mimetype === "application/vnd.ms-excel";
 
   if (extname && mimetype) {
@@ -20,11 +21,11 @@ function checkFileType(
     const err = new Error("Error: CSV Files Only!");
     return cb(err);
   }
-}
+};
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10000000 }, // Limit file size to 10MB
+  limits: { fileSize: 100000000 }, // Limit file size to 10MB
   fileFilter: (req, file, cb) => {
     checkFileType(file, cb);
   },

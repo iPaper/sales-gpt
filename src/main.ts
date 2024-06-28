@@ -2,14 +2,13 @@ import { readFileSync } from "fs";
 import express from "express";
 import cors from "cors";
 
-import { CsvDataItem, DataItemFromGPT } from "./interfaces.js";
 import multerUpload from "./multerUpload.js";
 import runGPT from "./runGPT.js";
 import {
   getDataFromUploadedFile,
   updateUserInstructions,
   getLeadDataFromGPT,
-  createCSV,
+  createXLSX,
 } from "./dataManipulationFunctions.js";
 
 const app = express();
@@ -71,30 +70,46 @@ app.post("/upload", async (req, res) => {
       readFileSync("json/userInstructionsSave.json").toString()
     );
 
-    multerUpload(req, res, async () => {
+    multerUpload(req, res, async (err) => {
+      if (err) {
+        return res.status(500).send(err.message);
+      }
       if (req.file === undefined) {
-        res.status(400).send("Error: No File Selected!");
-      } else {
-        const dataFromUploadedFile = (await getDataFromUploadedFile(
-          req.file.buffer
-        )) as CsvDataItem[];
-        const chatGPTArray: DataItemFromGPT[] = await getLeadDataFromGPT(
-          dataFromUploadedFile
-        );
+        return res.status(400).send("Error: No File Selected!");
+      }
 
-        const csvToExport = createCSV(chatGPTArray, headersToAdd);
-        const randomFileName: string = crypto.randomUUID();
+      try {
+        const dataFromUploadedFile = await getDataFromUploadedFile(
+          req.file.buffer
+        );
+        const chatGPTArray = await getLeadDataFromGPT(dataFromUploadedFile);
+
+        const fileToSend = createXLSX(chatGPTArray, headersToAdd);
+        const randomFileName = crypto.randomUUID();
 
         res.setHeader(
           "Content-Disposition",
-          `attachment; filename="${randomFileName}"`
+          `attachment; filename="${randomFileName}.xlxs"`
         );
-        res.setHeader("Content-Type", "text/csv");
-        res.status(200).send(csvToExport);
+        res.setHeader(
+          "Content-Type",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        res.status(200).send(fileToSend);
+      } catch (processingError) {
+        if (processingError instanceof Error) {
+          res.status(500).send(processingError.message);
+        } else {
+          res.status(500).send("An unknown error occurred during processing.");
+        }
       }
     });
   } catch (err) {
-    res.status(500).send(err);
+    if (err instanceof Error) {
+      res.status(500).send(err.message);
+    } else {
+      res.status(500).send("An unknown error occurred.");
+    }
   }
 });
 

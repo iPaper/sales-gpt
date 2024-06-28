@@ -1,4 +1,4 @@
-export interface CsvDataItem {
+export interface UploadDataItem {
   url: string;
   id: string;
   name: string;
@@ -11,5 +11,5 @@ export interface additionalItemProperties {
 }
 
 export interface DataItemFromGPT
-  extends CsvDataItem,
+  extends UploadDataItem,
     additionalItemProperties {}

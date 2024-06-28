@@ -15,12 +15,12 @@
       <h1>Upload a CSV file, or enter a link</h1>
 
       <div>
-        <a href="yes.csv" download="yes.csv"
+        <a href="yes.xlsx" download="yes.xlsx"
           >Download checked list of websites with catalogs for testing</a
         >
       </div>
       <div>
-        <a href="no.csv" download="no.csv"
+        <a href="no.xlsx" download="no.xlsx"
           >Download checked list of websites with no catalogs for testing</a
         >
       </div>
@@ -38,7 +38,7 @@
         action="http://salesgpt.ipaper-dev.io:3000/upload"
         method="post"
         enctype="multipart/form-data"
-        accept=".csv"
+        accept=".xlxs"
       >
         <label for="file">Choose a file:</label>
         <input type="file" id="file" name="file" required />

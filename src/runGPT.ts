@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { readFileSync } from "fs";
 import { createJsonTranslator, createOpenAILanguageModel } from "typechat";
 import { createTypeScriptJsonValidator } from "typechat/ts";
+import { DataItemFromGPT } from "./interfaces.js";
 
 export type Target = {
   name: string;
@@ -69,7 +70,10 @@ export const getInstructions = () => {
   return instructions;
 };
 
-const runGPT = async (website?: string, recordId?: string) => {
+const runGPT = async (
+  website?: string,
+  recordId?: string
+): Promise<DataItemFromGPT> => {
   const chatCompletion = await openai.chat.completions.create({
     messages: [
       {
@@ -83,13 +87,12 @@ const runGPT = async (website?: string, recordId?: string) => {
       },
     ],
     temperature: 0, // Higher values means the model will take more risks.
-    max_tokens: 4000, // The maximum number of tokens to generate in the completion. 0-4096
+    max_tokens: 1000, // The maximum number of tokens to generate in the completion. 0-4096
     model: "gpt-4o",
   });
 
   const initialResult =
     chatCompletion?.choices?.[0]?.message?.content ?? ("No text" as string);
-  console.log(initialResult);
 
   const removedBreaksText = initialResult.replace(/(\r\n|\n|\r)/gm, "");
 

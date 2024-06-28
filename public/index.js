@@ -124,10 +124,21 @@ async function submitForm() {
       throw new Error("Network response was not ok");
     }
 
-    const csv = await response.text();
+    const blob = await response.blob();
 
-    // Trigger CSV download
-    downloadCSV(csv, "list.csv");
+    // Create a URL for the Blob
+    const url = window.URL.createObjectURL(blob);
+
+    // Create an anchor element and trigger the download
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = url;
+    a.download = "list.xlsx"; // Set the desired file name and extension
+    document.body.appendChild(a);
+    a.click();
+
+    // Revoke the object URL to free up memory
+    window.URL.revokeObjectURL(url);
   } catch (error) {
     console.error("There was a problem with the fetch operation:", error);
   } finally {
@@ -136,24 +147,9 @@ async function submitForm() {
   }
 }
 
-function downloadCSV(csv, filename) {
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = window.URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.style.display = "none";
-  a.href = url;
-  a.download = filename;
-
-  document.body.appendChild(a);
-  a.click();
-
-  window.URL.revokeObjectURL(url);
-}
-
 // loadDefaultInstructions();
 
-function isValidURL(url) {
+const isValidURL = (url) => {
   const pattern = new RegExp(
     "^(https?:\\/\\/)?" + // protocol
       "((([a-zA-Z\\d]([a-zA-Z\\d-]*[a-zA-Z\\d])*)\\.?)+[a-zA-Z]{2,}|" + // domain name
@@ -164,15 +160,11 @@ function isValidURL(url) {
     "i"
   ); // fragment locator
   return !!pattern.test(url);
-}
+};
 
 const runCheck = async () => {
-  disableButtons(true);
-  spinner.style.display = "block";
-
   const urlToCheck = document.querySelector("#urlInput").value;
   const websiteInfo = document.querySelector("#websiteInfo");
-  await updateUserInstructions(true);
 
   if (!isValidURL(urlToCheck)) {
     spinner.style.display = "none";
@@ -180,7 +172,17 @@ const runCheck = async () => {
     return;
   }
 
+  if (checkEmptyTextAreas()) {
+    window.alert("Please fill in all the text areas.");
+    return;
+  }
+
+  spinner.style.display = "block";
+  disableButtons(true);
+
   try {
+    await updateUserInstructions(true);
+
     const response = await fetch(`${URL}/check`, {
       method: "POST",
       headers: {
