@@ -39,18 +39,18 @@ to build and run js
 
 ## Things to consider 
 
-This is just the backend for handling provided CSV files with url, id, and name headers(column names) only!
+This is just the backend for handling provided XLXS files with  "Website URL", "Record ID", and  "Company name" headers(column names) only!
 The information is returned in CSV format
 
-[Front-end repository](https://github.com/boop-bap/gpt/tree/UI) or use the included public folder in this repository.
+[Front-end repository](https://github.com/boop-bap/gpt/tree/UI) or just use the included public folder in this repository.
 
-## Default headers(column names) and answers in output CSV file 
+## Default headers(column names) and answers in output XLXS file
  
-Id
+Record ID
 
-Url
+Website URL
 
-Name
+Company name
 
 Online: "Yes" | "No"
 
