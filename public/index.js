@@ -109,7 +109,7 @@ async function submitForm() {
   disableButtons(true);
   formSpinner.style.display = "inline-block";
 
-  updateUserInstructions(true);
+  // updateUserInstructions(true);
 
   const form = document.querySelector("#form");
   const formData = new FormData(form);
