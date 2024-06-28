@@ -54,7 +54,7 @@ export const getInstructions = () => {
   );
 
   const instructions = `
-    Answer should be as broad and as big as possible with no speculation and really extensively long and detailed with exclusive analysis on each point where and what was found. Try to aim for 1500 words.
+    Answer should be as broad and as big as possible with no speculation and really extensively long and detailed with exclusive analysis on each point where and what was found. Try to aim for 1000 words.
   
     1. Must include the id and url provided in the answer and display it only here once.
   
