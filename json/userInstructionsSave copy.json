@@ -1,12 +1,12 @@
 {
   "headersToAdd": [
-    "online",
-    "type",
-    "model",
-    "monthlyOrMoreCatalogs",
-    "url",
-    "name",
-    "id"
+    "Online",
+    "Type",
+    "Model",
+    "Monthly or more often catalogs",
+    "Website URL",
+    "Company name",
+    "Record ID"
   ],
   "userInstructions": {
     "type": "Please review the website to determine the type of business it represents. Identify whether it is B2B (Business-to-Business), B2C (Business-to-Consumer), both B2B and B2C, or an agency. If none of these categories apply, indicate 'Not Found'. Conduct a separate check for each type of business classification.",

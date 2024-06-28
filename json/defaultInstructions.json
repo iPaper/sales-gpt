@@ -1,12 +1,12 @@
 {
   "headersToAdd": [
-    "online",
-    "type",
-    "model",
-    "monthlyOrMoreCatalogs",
-    "url",
-    "name",
-    "id"
+    "Online",
+    "Type",
+    "Model",
+    "Monthly or more often catalogs",
+    "Website URL",
+    "Company name",
+    "Record ID"
   ],
   "userInstructions": {
     "type": "${type}",

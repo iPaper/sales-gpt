@@ -42,7 +42,9 @@ export const getLeadDataFromGPT = async (
     current++;
 
     try {
-      const gptPromises = chunk.map((item) => runGPT(item.url, item.id));
+      const gptPromises = chunk.map((item) =>
+        runGPT(item["Website URL"], item["Record ID"])
+      );
       const chunkAnswers = await Promise.all(gptPromises);
       finalResult.push(...chunkAnswers);
     } catch (error) {
@@ -65,28 +67,6 @@ const splitArrayIntoChunks = (
       acc.push(array.slice(index, index + chunkSize));
     return acc;
   }, []);
-};
-
-export const createCSV = (
-  data: DataItemFromGPT[],
-  headersToAdd: (keyof DataItemFromGPT)[]
-) => {
-  // Create a CSV string
-  let csv = headersToAdd.join(",") + "\n";
-
-  data.forEach((row) => {
-    let values = headersToAdd.map((header) => {
-      let value = row[header];
-      // Escape double quotes by doubling them and wrap values in double quotes
-      if (typeof value === "string") {
-        value = value.replace(/"/g, '""');
-      }
-      return `"${value}"`;
-    });
-    csv += values.join(",") + "\n";
-  });
-
-  return csv;
 };
 
 export const createXLSX = (

@@ -5,32 +5,32 @@ import { createTypeScriptJsonValidator } from "typechat/ts";
 import { DataItemFromGPT } from "./interfaces.js";
 
 export type Target = {
-  name: string;
-  online: "Yes" | "No";
-  url: string;
-  id: string;
-  type: "B2B" | "B2C" | "Both B2B and B2C" | "Agency";
-  model:
+  "Company name": string;
+  Online: "Yes" | "No";
+  "Website URL": string;
+  "Record ID": string;
+  Type: "B2B" | "B2C" | "Both B2B and B2C" | "Agency";
+  Model:
     | "Retail"
     | "E-commerce"
     | "Both e-commerce and physical stores"
     | "Physical stores";
-  monthlyOrMoreCatalogs: "Yes" | "No" | "Maybe" | "Not sure";
+  "Monthly or more often catalogs": "Yes" | "No" | "Maybe" | "Not sure";
 };
 
 const targetTypeString = `
   export type Target = {
-    name: string;
-    online: "Yes" | "No";
-    url: string;
-    id: string;
-    type: "B2B" | "B2C" | "Both B2B and B2C" | "Agency";
-    model:
-      | "Retail"
-      | "E-commerce"
-      | "Both e-commerce and physical stores"
-      | "Physical stores";
-    monthlyOrMoreCatalogs: "Yes" | "No" | "Maybe" | "Not sure";
+  "Company name": string;
+   Online: "Yes" | "No";
+  "Website URL": string;
+  "Record ID": string;
+   Type: "B2B" | "B2C" | "Both B2B and B2C" | "Agency";
+   Model:
+    | "Retail"
+    | "E-commerce"
+    | "Both e-commerce and physical stores"
+    | "Physical stores";
+  "Monthly or more often catalogs": "Yes" | "No" | "Maybe" | "Not sure";
   };
   `;
 
