@@ -42,7 +42,7 @@ to build and run js
 This is just the backend for handling provided XLXS files with  "Website URL", "Record ID", and  "Company name" headers(column names) only!
 The information is returned in XLXS format
 
-[Front-end repository](https://github.com/boop-bap/gpt/tree/UI) or just use the included public folder in this repository.
+The fron-end is included in the public folder of this repository.
 
 ## Default headers(column names) and answers in output XLXS file
  
