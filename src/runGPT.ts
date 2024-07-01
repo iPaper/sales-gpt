@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 import { readFileSync } from "fs";
-import { createJsonTranslator, createOpenAILanguageModel } from "typechat";
-import { createTypeScriptJsonValidator } from "typechat/ts";
 import { DataItemFromGPT } from "./interfaces.js";
+import { createTypeScriptJsonValidator } from "typechat/ts";
+import { createJsonTranslator, createOpenAILanguageModel } from "typechat";
 
 export type Target = {
   "Company name": string;
@@ -87,7 +87,7 @@ const runGPT = async (
       },
     ],
     temperature: 0, // Higher values means the model will take more risks.
-    max_tokens: 1000, // The maximum number of tokens to generate in the completion. 0-4096
+    max_tokens: 3500, // The maximum number of tokens to generate in the completion. 0-4096
     model: "gpt-4o",
   });
 

@@ -100,7 +100,7 @@ const updateUserInstructions = async (isForm = false) => {
   }
 };
 
-async function submitForm() {
+const submitForm = async () => {
   if (checkEmptyTextAreas()) {
     window.alert("Please fill in all the text areas.");
     return;
@@ -145,9 +145,9 @@ async function submitForm() {
     formSpinner.style.display = "none";
     disableButtons(false);
   }
-}
+};
 
-// loadDefaultInstructions();
+loadDefaultInstructions();
 
 const isValidURL = (url) => {
   const pattern = new RegExp(
@@ -195,11 +195,11 @@ const runCheck = async () => {
 
     websiteInfo.innerHTML = `
         <ul>
-          <li><strong>Website:</strong> ${answer.url}</li>
-          <li><strong>Monthly or more often catalogs:</strong> ${answer.monthlyOrMoreCatalogs}</li>
-          <li><strong>Business model:</strong> ${answer.model}</li>
-          <li><strong>Online:</strong> ${answer.online}</li>
-          <li><strong>Business type:</strong> ${answer.type}</li>
+          <li><strong>Website:</strong> ${answer["Website URL"]}</li>
+          <li><strong>Monthly or more often catalogs:</strong> ${answer["Monthly or more often catalogs"]}</li>
+          <li><strong>Business model:</strong> ${answer["Model"]}</li>
+          <li><strong>Online:</strong> ${answer["Online"]}</li>
+          <li><strong>Business type:</strong> ${answer["Type"]}</li>
        </ul>
          `;
   } catch (error) {

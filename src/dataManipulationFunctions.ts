@@ -1,9 +1,9 @@
 import xlsx from "xlsx";
-import { PassThrough } from "stream";
-
-import { UploadDataItem, DataItemFromGPT } from "./interfaces.js";
-import { readFileSync, writeFileSync } from "fs";
 import runGPT from "./runGPT.js";
+
+import { PassThrough } from "stream";
+import { readFileSync, writeFileSync } from "fs";
+import { UploadDataItem, DataItemFromGPT } from "./interfaces.js";
 
 export const getDataFromUploadedFile = (
   buffer: Buffer
